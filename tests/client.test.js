@@ -104,3 +104,24 @@ test('fmtMs / fmtAgo 基本行为（含语言参数）', () => {
   assert.equal(T.fmtAgo(0, T.STR.zh), T.STR.zh.agoNow)
   assert.equal(T.fmtAgo(null, T.STR.en), T.STR.en.agoUnknown)
 })
+
+test('portal 浮层 outside-click：wrap / pop / shell 任一命中都算内部', () => {
+  assert.equal(typeof T.isInsideOverlay, 'function', '应导出 isInsideOverlay 供回归测试')
+  const refs = [
+    { current: { contains: (t) => t === 'in-wrap' } },
+    { current: { contains: (t) => t === 'in-pop' } },
+    { current: { contains: (t) => t === 'in-shell' } },
+  ]
+  for (const inside of ['in-wrap', 'in-pop', 'in-shell']) {
+    assert.equal(T.isInsideOverlay(inside, refs), true, `${inside} 不应触发关闭`)
+  }
+  assert.equal(T.isInsideOverlay('outside', refs), false, '浮层外的点击应触发关闭')
+  assert.equal(T.isInsideOverlay('in-pop', [null, { current: null }, { current: {} }]), false, '空 ref 不应抛错')
+})
+
+test('portal 浮层根节点挂 ref，outside-click 判断覆盖三个根（静态回归）', () => {
+  assert.match(clientSrc, /className: 'dsh-steer-pop', ref: popRef/, 'pop portal 必须挂 popRef')
+  assert.match(clientSrc, /className: 'dsh-steer-shell', ref: shellRef/, 'shell portal 必须挂 shellRef')
+  assert.match(clientSrc, /isInsideOverlay\(e\.target, \[wrapRef, popRef, shellRef\]\)/, 'onDown 必须同时判断三个根')
+  assert.doesNotMatch(clientSrc, /!wrapRef\.current\.contains\(e\.target\)/, '不得退回只看 wrapRef 的旧判断')
+})
